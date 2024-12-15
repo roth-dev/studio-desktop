@@ -12,16 +12,13 @@ const KEY = "theme";
 
 type ThemeType = "dark" | "light";
 
-type State = {
+type ContextType = {
   theme: ThemeType;
-};
-
-type ContextType = State & {
   toggleTheme: (theme?: ThemeType) => void;
 };
 
 const ThemeContext = createContext<ContextType>({
-  theme: "dark",
+  theme: "light",
   toggleTheme: () => {},
 });
 
@@ -37,7 +34,12 @@ export default function ThemeProvider({
 
   const toggleTheme = useCallback(
     (theme?: ThemeType) => {
-      setTheme((prev) => (theme ? theme : prev === "light" ? "dark" : "light"));
+      setTheme((prev) => {
+        if (theme) {
+          return theme;
+        }
+        return prev === "light" ? "dark" : "light";
+      });
     },
     [setTheme],
   );
@@ -47,7 +49,12 @@ export default function ThemeProvider({
     document.body.className = theme;
   }, [theme]);
 
-  const value = useMemo(() => ({ toggleTheme, theme }), [toggleTheme, theme]);
+  const value = useMemo(() => {
+    return {
+      theme,
+      toggleTheme,
+    };
+  }, [toggleTheme, theme]);
 
   return (
     <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>
