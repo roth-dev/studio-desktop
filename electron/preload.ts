@@ -104,6 +104,10 @@ const outerbaseIpc = {
     },
   },
 
+  get: <T>(key: string): Promise<T> => ipcRenderer.invoke("get-setting", key),
+
+  set: <T>(key: string, value: T): Promise<void> =>
+    ipcRenderer.invoke("set-setting", key, value),
   // You can expose other APTs you need here.
   // ...
 };

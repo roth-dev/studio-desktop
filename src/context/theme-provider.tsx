@@ -10,7 +10,7 @@ import {
 
 const KEY = "theme";
 
-type ThemeType = "dark" | "light";
+export type ThemeType = "dark" | "light";
 
 type ContextType = {
   theme: ThemeType;
@@ -27,27 +27,24 @@ export const useTheme = () => useContext(ThemeContext);
 export default function ThemeProvider({
   children,
 }: PropsWithChildren<unknown>) {
-  const [theme, setTheme] = useState<ThemeType>(() => {
-    const storedTheme = localStorage.getItem(KEY) as ThemeType; //make typescript satified
-    return storedTheme || "light";
-  });
+  const [theme, setTheme] = useState<ThemeType>("light");
 
-  const toggleTheme = useCallback(
-    (theme?: ThemeType) => {
-      setTheme((prev) => {
-        if (theme) {
-          return theme;
-        }
-        return prev === "light" ? "dark" : "light";
-      });
-    },
-    [setTheme],
-  );
+  const toggleTheme = useCallback(async () => {
+    const newTheme = theme === "light" ? "dark" : "light";
+    setTheme(newTheme);
+    document.body.className = newTheme;
+    await window.outerbaseIpc.set(KEY, newTheme);
+  }, [setTheme, theme]);
 
   useEffect(() => {
-    localStorage.setItem(KEY, theme);
-    document.body.className = theme;
-  }, [theme]);
+    (async () => {
+      const savedTheme = await window.outerbaseIpc.get<ThemeType>(KEY);
+      if (savedTheme) {
+        setTheme(savedTheme);
+        document.body.className = savedTheme;
+      }
+    })();
+  }, []);
 
   const value = useMemo(() => {
     return {
