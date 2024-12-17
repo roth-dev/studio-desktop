@@ -33,12 +33,12 @@ export default function ThemeProvider({
     const newTheme = theme === "light" ? "dark" : "light";
     setTheme(newTheme);
     document.body.className = newTheme;
-    await window.outerbaseIpc.set(KEY, newTheme);
+    await window.outerbaseIpc.setting.set(KEY, newTheme);
   }, [setTheme, theme]);
 
   useEffect(() => {
     (async () => {
-      const savedTheme = await window.outerbaseIpc.get<ThemeType>(KEY);
+      const savedTheme = await window.outerbaseIpc.setting.get<ThemeType>(KEY);
       if (savedTheme) {
         setTheme(savedTheme);
         document.body.className = savedTheme;

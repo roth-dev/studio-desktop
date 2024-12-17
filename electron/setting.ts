@@ -1,5 +1,5 @@
 import fs from "fs";
-import { getUserDataPath } from "./file-helper";
+import { getUserDataFile } from "./file-helper";
 
 interface Settings {
   [key: string]: string;
@@ -10,7 +10,7 @@ export class Setting {
   private settings: Settings;
 
   constructor() {
-    this.filePath = getUserDataPath("settings.json");
+    this.filePath = getUserDataFile("settings.json");
     this.settings = {};
   }
 
