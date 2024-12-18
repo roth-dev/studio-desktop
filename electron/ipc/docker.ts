@@ -83,7 +83,6 @@ export function bindDockerIpc(win: BrowserWindow) {
     });
   }
 
-  ipcMain.removeHandler("docker-init"); // clean up any existing docker before init new ones
   ipcMain.handle("docker-init", async () => {
     try {
       if (dockerIniting) return false;
