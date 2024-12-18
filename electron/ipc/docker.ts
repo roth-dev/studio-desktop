@@ -11,9 +11,15 @@ export interface PullImageProgress {
   id: string;
 }
 
+let handlersBound = false;
+
 export function bindDockerIpc(win: BrowserWindow) {
+  if (handlersBound) return; // Prevent duplicate registrations
+  handlersBound = true;
+
   const docker = new Docker();
   let eventStream: NodeJS.ReadableStream | undefined;
+  let dockerIniting = false;
 
   async function getContainer(
     id: string,
@@ -77,7 +83,7 @@ export function bindDockerIpc(win: BrowserWindow) {
     });
   }
 
-  let dockerIniting = false;
+  ipcMain.removeHandler("docker-init"); // clean up any existing docker before init new ones
   ipcMain.handle("docker-init", async () => {
     try {
       if (dockerIniting) return false;
