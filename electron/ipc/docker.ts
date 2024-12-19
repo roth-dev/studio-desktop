@@ -89,7 +89,13 @@ export function bindDockerIpc(app: OuterbaseApplication) {
       eventStream = await docker.getEvents();
 
       eventStream.on("data", (data) => {
-        app.win?.webContents.send("docker-event", data.toString());
+        try {
+          if (app.win) {
+            app.win?.webContents.send("docker-event", data.toString());
+          }
+        } catch (e) {
+          console.error(e)
+        }
       });
 
       eventStream.on("end", () => {
