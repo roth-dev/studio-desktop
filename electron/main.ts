@@ -15,6 +15,7 @@ import { type ConnectionStoreItem } from "@/lib/conn-manager-store";
 import { bindDockerIpc } from "./ipc/docker";
 import { Setting } from "./setting";
 import { ThemeType } from "@/context/theme-provider";
+import { OuterbaseApplication } from "./type";
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 // const require = createRequire(import.meta.url);
@@ -54,9 +55,7 @@ process.env.VITE_PUBLIC = VITE_DEV_SERVER_URL
 
 const settings = new Setting();
 settings.load();
-const application: {
-  win?: BrowserWindow;
-} = {
+const application: OuterbaseApplication = {
   win: undefined,
 };
 
