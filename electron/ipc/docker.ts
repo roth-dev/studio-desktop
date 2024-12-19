@@ -11,12 +11,7 @@ export interface PullImageProgress {
   id: string;
 }
 
-let handlersBound = false;
-
-export function bindDockerIpc(win: BrowserWindow) {
-  if (handlersBound) return; // Prevent duplicate registrations
-  handlersBound = true;
-
+export function bindDockerIpc({ win }: { win?: BrowserWindow }) {
   const docker = new Docker();
   let eventStream: NodeJS.ReadableStream | undefined;
   let dockerIniting = false;
@@ -93,7 +88,7 @@ export function bindDockerIpc(win: BrowserWindow) {
       eventStream = await docker.getEvents();
 
       eventStream.on("data", (data) => {
-        win.webContents.send("docker-event", data.toString());
+        win?.webContents.send("docker-event", data.toString());
       });
 
       eventStream.on("end", () => {
