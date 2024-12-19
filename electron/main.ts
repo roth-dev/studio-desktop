@@ -14,7 +14,8 @@ import log from "electron-log";
 import { type ConnectionStoreItem } from "@/lib/conn-manager-store";
 import { bindDockerIpc } from "./ipc/docker";
 import { Setting } from "./setting";
-import { ThemeType } from "@/context/theme-provider";
+import { createDatabaseWindow } from "./window/create-database";
+import { createMenu } from "./menu";
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 // const require = createRequire(import.meta.url);
@@ -56,59 +57,56 @@ const settings = new Setting();
 settings.load();
 let win: BrowserWindow | null;
 
-const STUDIO_ENDPOINT = "https://studio.outerbase.com/embed";
-// const STUDIO_ENDPOINT = "http://localhost:3008/embed";
+// function createDatabaseWindow(
+//   conn: ConnectionStoreItem,
+//   enableDebug?: boolean,
+// ) {
+//   const dbWindow = new BrowserWindow({
+//     icon: path.join(process.env.VITE_PUBLIC, "electron-vite.svg"),
+//     show: false,
+//     width: 1024,
+//     height: 768,
+//     autoHideMenuBar: true,
+//     webPreferences: {
+//       devTools: true,
+//       additionalArguments: ["--database=" + conn.id],
+//       preload: path.join(__dirname, "preload.mjs"),
+//     },
+//   });
 
-function createDatabaseWindow(
-  conn: ConnectionStoreItem,
-  enableDebug?: boolean,
-) {
-  const dbWindow = new BrowserWindow({
-    icon: path.join(process.env.VITE_PUBLIC, "electron-vite.svg"),
-    show: false,
-    width: 1024,
-    height: 768,
-    autoHideMenuBar: true,
-    webPreferences: {
-      devTools: true,
-      additionalArguments: ["--database=" + conn.id],
-      preload: path.join(__dirname, "preload.mjs"),
-    },
-  });
+//   const theme = settings.get<ThemeType>("theme") || "light";
 
-  const theme = settings.get<ThemeType>("theme") || "light";
+//   ConnectionPool.create(conn);
 
-  ConnectionPool.create(conn);
+//   const queryString = new URLSearchParams({
+//     name: conn.name,
+//     theme,
+//   }).toString();
 
-  const queryString = new URLSearchParams({
-    name: conn.name,
-    theme,
-  }).toString();
+//   dbWindow.on("closed", () => {
+//     win?.show();
+//     ConnectionPool.close(conn.id);
+//   });
 
-  dbWindow.on("closed", () => {
-    win?.show();
-    ConnectionPool.close(conn.id);
-  });
+//   if (conn.type === "mysql") {
+//     dbWindow.loadURL(`${STUDIO_ENDPOINT}/mysql?${queryString}`);
+//   } else if (conn.type === "postgres") {
+//     dbWindow.loadURL(`${STUDIO_ENDPOINT}/postgres?${queryString}`);
+//   } else if (conn.type === "starbase" || conn.type === "cloudflare") {
+//     dbWindow.loadURL(`${STUDIO_ENDPOINT}/starbase?${queryString}`);
+//   } else {
+//     dbWindow.loadURL(`${STUDIO_ENDPOINT}/sqlite?${queryString}`);
+//   }
 
-  if (conn.type === "mysql") {
-    dbWindow.loadURL(`${STUDIO_ENDPOINT}/mysql?${queryString}`);
-  } else if (conn.type === "postgres") {
-    dbWindow.loadURL(`${STUDIO_ENDPOINT}/postgres?${queryString}`);
-  } else if (conn.type === "starbase" || conn.type === "cloudflare") {
-    dbWindow.loadURL(`${STUDIO_ENDPOINT}/starbase?${queryString}`);
-  } else {
-    dbWindow.loadURL(`${STUDIO_ENDPOINT}/sqlite?${queryString}`);
-  }
+//   if (process.env.NODE_ENV === "development" || enableDebug) {
+//     dbWindow.webContents.openDevTools();
+//     dbWindow.maximize();
+//   }
 
-  if (process.env.NODE_ENV === "development" || enableDebug) {
-    dbWindow.webContents.openDevTools();
-    dbWindow.maximize();
-  }
+//   dbWindow.show();
+// }
 
-  dbWindow.show();
-}
-
-function createWindow() {
+export function createWindow() {
   win = new BrowserWindow({
     icon: path.join(process.env.VITE_PUBLIC, "electron-vite.svg"),
     title: "Outerbase Studio",
@@ -170,7 +168,10 @@ function createWindow() {
     win?.webContents.send("update-downloaded", info);
     log.info("update-downloaded", info);
   });
-
+  createMenu({
+    settings,
+    __dirname,
+  });
   bindDockerIpc(win);
 
   if (VITE_DEV_SERVER_URL) {
@@ -220,7 +221,7 @@ ipcMain.handle("close", async (sender) => {
 });
 
 ipcMain.handle("connect", (_, conn: ConnectionStoreItem, enableDebug) => {
-  createDatabaseWindow(conn, enableDebug);
+  createDatabaseWindow({ win, conn, __dirname, enableDebug, settings });
   if (win) win.hide();
 });
 

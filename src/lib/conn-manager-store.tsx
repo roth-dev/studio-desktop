@@ -155,7 +155,7 @@ export const connectionTypeTemplates: Record<string, ConnectionTypeTemplate> = {
   starbase: {
     name: "starbase",
     label: "Starbase",
-    icon: StarbaseIcon,
+    icon: () => <StarbaseIcon className="text-white" />,
     defaultValue: { host: "" },
     template: [
       {

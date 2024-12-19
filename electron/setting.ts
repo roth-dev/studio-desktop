@@ -1,7 +1,7 @@
 import fs from "fs";
 import { getUserDataFile } from "./file-helper";
 
-interface Settings {
+export interface Settings {
   [key: string]: string;
 }
 

@@ -10,8 +10,10 @@ export interface PullImageProgress {
   progress: string;
   id: string;
 }
-
+let hadnlerBound = false;
 export function bindDockerIpc(win: BrowserWindow) {
+  if (hadnlerBound) return;
+  hadnlerBound = true;
   const docker = new Docker();
   let eventStream: NodeJS.ReadableStream | undefined;
 
