@@ -5,8 +5,6 @@ import {
   ipcMain,
   type OpenDialogOptions,
 } from "electron";
-// import { createRequire } from "node:module";
-import { fileURLToPath } from "node:url";
 import path from "node:path";
 import { ConnectionPool } from "./connection-pool";
 import electronUpdater, { type AppUpdater } from "electron-updater";
@@ -14,8 +12,10 @@ import log from "electron-log";
 import { type ConnectionStoreItem } from "@/lib/conn-manager-store";
 import { bindDockerIpc } from "./ipc/docker";
 import { Setting } from "./setting";
-import { ThemeType } from "@/context/theme-provider";
 import { OuterbaseApplication } from "./type";
+import { createMenu } from "./menu";
+import { createDatabaseWindow } from "./window/create-database";
+import { getOuterbaseDir, isDev, isMac } from "./utils";
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 // const require = createRequire(import.meta.url);
@@ -31,10 +31,11 @@ log.transports.file.level = "info";
 autoUpdater.logger = log;
 autoUpdater.autoDownload = false;
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const __dirname = getOuterbaseDir();
 
 // The built directory structure
 //
+
 // ├─┬─┬ dist
 // │ │ └── index.html
 // │ │
@@ -48,7 +49,6 @@ process.env.APP_ROOT = path.join(__dirname, "..");
 export const VITE_DEV_SERVER_URL = process.env["VITE_DEV_SERVER_URL"];
 export const MAIN_DIST = path.join(process.env.APP_ROOT, "dist-electron");
 export const RENDERER_DIST = path.join(process.env.APP_ROOT, "dist");
-
 process.env.VITE_PUBLIC = VITE_DEV_SERVER_URL
   ? path.join(process.env.APP_ROOT, "public")
   : RENDERER_DIST;
@@ -59,59 +59,7 @@ const application: OuterbaseApplication = {
   win: undefined,
 };
 
-const STUDIO_ENDPOINT = "https://studio.outerbase.com/embed";
-// const STUDIO_ENDPOINT = "http://localhost:3008/embed";
-
-function createDatabaseWindow(
-  conn: ConnectionStoreItem,
-  enableDebug?: boolean,
-) {
-  const dbWindow = new BrowserWindow({
-    icon: path.join(process.env.VITE_PUBLIC, "electron-vite.svg"),
-    show: false,
-    width: 1024,
-    height: 768,
-    autoHideMenuBar: true,
-    webPreferences: {
-      devTools: true,
-      additionalArguments: ["--database=" + conn.id],
-      preload: path.join(__dirname, "preload.mjs"),
-    },
-  });
-
-  const theme = settings.get<ThemeType>("theme") || "light";
-
-  ConnectionPool.create(conn);
-
-  const queryString = new URLSearchParams({
-    name: conn.name,
-    theme,
-  }).toString();
-
-  dbWindow.on("closed", () => {
-    application.win?.show();
-    ConnectionPool.close(conn.id);
-  });
-
-  if (conn.type === "mysql") {
-    dbWindow.loadURL(`${STUDIO_ENDPOINT}/mysql?${queryString}`);
-  } else if (conn.type === "postgres") {
-    dbWindow.loadURL(`${STUDIO_ENDPOINT}/postgres?${queryString}`);
-  } else if (conn.type === "starbase" || conn.type === "cloudflare") {
-    dbWindow.loadURL(`${STUDIO_ENDPOINT}/starbase?${queryString}`);
-  } else {
-    dbWindow.loadURL(`${STUDIO_ENDPOINT}/sqlite?${queryString}`);
-  }
-
-  if (process.env.NODE_ENV === "development" || enableDebug) {
-    dbWindow.webContents.openDevTools();
-    dbWindow.maximize();
-  }
-
-  dbWindow.show();
-}
-
-function createWindow() {
+export function createWindow() {
   application.win = new BrowserWindow({
     icon: path.join(process.env.VITE_PUBLIC, "electron-vite.svg"),
     title: "Outerbase Studio",
@@ -123,7 +71,7 @@ function createWindow() {
     },
   });
 
-  if (process.env.NODE_ENV === "development") {
+  if (isDev) {
     application.win.webContents.openDevTools({ mode: "detach" });
   }
 
@@ -189,7 +137,7 @@ function createWindow() {
 // for applications and their menu bar to stay active until the user quits
 // explicitly with Cmd + Q.
 app.on("window-all-closed", () => {
-  if (process.platform !== "darwin") {
+  if (!isMac) {
     app.quit();
     application.win = undefined;
   }
@@ -210,6 +158,10 @@ app
     bindDockerIpc(application);
   });
 
+ipcMain.on("connections", (_, connections: ConnectionStoreItem[]) => {
+  createMenu(application.win, connections);
+});
+
 ipcMain.handle("query", async (_, connectionId, query) => {
   const r = await ConnectionPool.query(connectionId, query);
   return r;
@@ -226,10 +178,18 @@ ipcMain.handle("close", async (sender) => {
   sender.sender.close({
     waitForBeforeUnload: true,
   });
+
+  if (BrowserWindow.getAllWindows().length > 1) {
+    application.win?.destroy();
+  }
 });
 
 ipcMain.handle("connect", (_, conn: ConnectionStoreItem, enableDebug) => {
-  createDatabaseWindow(conn, enableDebug);
+  createDatabaseWindow({
+    win: application.win,
+    conn,
+    enableDebug,
+  });
   if (application.win) application.win.hide();
 });
 

@@ -54,6 +54,10 @@ const outerbaseIpc = {
     return ipcRenderer.invoke("connect", conn, enableDebug);
   },
 
+  getConnection() {
+    return ipcRenderer.invoke("get-connection");
+  },
+
   downloadUpdate() {
     return ipcRenderer.invoke("download-update");
   },
@@ -105,11 +109,11 @@ const outerbaseIpc = {
   },
 
   setting: {
-    get: <T = string>(key: string): Promise<T> => ipcRenderer.invoke("get-setting", key),
+    get: <T = string>(key: string): Promise<T> =>
+      ipcRenderer.invoke("get-setting", key),
     set: <T = string>(key: string, value: T): Promise<void> =>
-      ipcRenderer.invoke("set-setting", key, value)
-  }
-
+      ipcRenderer.invoke("set-setting", key, value),
+  },
 };
 
 export type OuterbaseIpc = typeof outerbaseIpc;
