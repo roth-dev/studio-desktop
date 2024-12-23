@@ -1,6 +1,6 @@
 import { Toolbar, ToolbarBackButton, ToolbarTitle } from "@/components/toolbar";
 import ConnectionEditor from "./editor";
-import { useLocation, useNavigate, useParams } from "react-router-dom";
+import { useLocation, useParams } from "react-router-dom";
 import {
   ConnectionStoreItem,
   ConnectionStoreManager,
@@ -8,15 +8,14 @@ import {
 } from "@/lib/conn-manager-store";
 import { useCallback, useState } from "react";
 import { Button } from "@/components/ui/button";
+import useGoback from "@/hooks/useGoback";
 export function ConnectionCreateUpdateRoute() {
   const { type, connectionId } = useParams<{
     type: string;
     connectionId?: string;
   }>();
-
   const { state: locationState } = useLocation();
-
-  const navigate = useNavigate();
+  const goBack = useGoback();
   const template = connectionTypeTemplates[type as string];
 
   const [value, setValue] = useState<ConnectionStoreItem>(() => {
@@ -35,8 +34,8 @@ export function ConnectionCreateUpdateRoute() {
 
   const onSaveClicked = useCallback(() => {
     ConnectionStoreManager.save(value);
-    navigate(-1);
-  }, [value, navigate]);
+    goBack();
+  }, [value, goBack]);
 
   return (
     <div>

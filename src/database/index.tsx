@@ -376,5 +376,13 @@ const ROUTE_LIST = [
 ];
 
 export default function DatabaseTab() {
-  return <AnimatedRouter initialRoutes={["/connection"]} routes={ROUTE_LIST} />;
+  const [initialRoute] = useState(() => {
+    const location = window.location;
+    if (!location || location.pathname === "/") {
+      return "/connection";
+    }
+    return window.location.pathname;
+  });
+
+  return <AnimatedRouter initialRoutes={[initialRoute]} routes={ROUTE_LIST} />;
 }
