@@ -32,8 +32,12 @@ export function bindMenuIpc(
             if (existingWindow && !existingWindow.isDestroyed()) {
               existingWindow.focus();
             } else {
-              createDatabaseWindow({ main, conn, settings });
-              mainWindow?.hide();
+              if (!mainWindow?.isDestroyed()) {
+                if (mainWindow?.isVisible()) {
+                  main.hide();
+                }
+                createDatabaseWindow({ main, conn, settings });
+              }
             }
           },
         };

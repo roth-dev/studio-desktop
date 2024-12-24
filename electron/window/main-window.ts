@@ -109,11 +109,10 @@ export class MainWindow {
 
   public navigate(routeName: string): void {
     if (this.application.win) {
-      if (!this.application.win.isVisible()) {
-        this.show();
-      }
       if (this.application.win.isDestroyed()) {
         this.init();
+      } else {
+        this.show();
       }
       this.application.win.webContents.send("navigate-to", routeName);
     }
@@ -125,7 +124,7 @@ export class MainWindow {
 
   public show(): void {
     if (!this.application.win || this.application.win.isDestroyed()) {
-      this.init;
+      this.init();
     } else {
       this.application.win?.show();
     }
