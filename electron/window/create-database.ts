@@ -4,21 +4,21 @@ import { BrowserWindow } from "electron";
 import { ConnectionPool } from "../connection-pool";
 import { STUDIO_ENDPOINT } from "../constants";
 import { Setting } from "../setting";
-import { OuterbaseApplication } from "../type";
 import { getWindowConfig, isDev } from "../utils";
+import { MainWindow } from "./main-window";
 
 export const windowMap = new Map<string, BrowserWindow>();
 
 export function createDatabaseWindow(ctx: {
-  win: OuterbaseApplication["win"];
+  main: MainWindow;
+  settings: Setting;
   conn: ConnectionStoreItem;
   enableDebug?: boolean;
 }) {
+  const win = ctx.main.getWindow();
   const dbWindow = new BrowserWindow(getWindowConfig(ctx.conn.id));
 
-  const settings = new Setting();
-  settings.load();
-  const theme = settings.get<ThemeType>("theme") || "light";
+  const theme = ctx.settings.get<ThemeType>("theme") || "light";
 
   ConnectionPool.create(ctx.conn);
 
@@ -31,7 +31,7 @@ export function createDatabaseWindow(ctx: {
 
   dbWindow.on("closed", () => {
     if (windowMap.size === 1) {
-      ctx.win?.show();
+      win?.show();
     }
     windowMap.delete(ctx.conn.id);
     ConnectionPool.close(ctx.conn.id);

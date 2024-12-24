@@ -6,19 +6,15 @@ import {
   type OpenDialogOptions,
 } from "electron";
 import path from "node:path";
-import { ConnectionPool } from "./connection-pool";
-import electronUpdater, { type AppUpdater } from "electron-updater";
 import log from "electron-log";
-import { type ConnectionStoreItem } from "@/lib/conn-manager-store";
-import { bindDockerIpc } from "./ipc/docker";
 import { Setting } from "./setting";
-import { OuterbaseApplication } from "./type";
-import { createMenu } from "./menu";
+import { getOuterbaseDir, isMac } from "./utils";
+import { ConnectionPool } from "./connection-pool";
+import { MainWindow } from "./window/main-window";
+import electronUpdater, { type AppUpdater } from "electron-updater";
+import { type ConnectionStoreItem } from "@/lib/conn-manager-store";
 import { createDatabaseWindow } from "./window/create-database";
-import { getOuterbaseDir, isDev, isMac } from "./utils";
-
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-// const require = createRequire(import.meta.url);
+import { bindMenuIpc, bindDockerIpc } from "./ipc";
 
 export function getAutoUpdater(): AppUpdater {
   // Using destructuring to access autoUpdater due to the CommonJS module of 'electron-updater'.
@@ -31,7 +27,7 @@ log.transports.file.level = "info";
 autoUpdater.logger = log;
 autoUpdater.autoDownload = false;
 
-const __dirname = getOuterbaseDir();
+const dirname = getOuterbaseDir();
 
 // The built directory structure
 //
@@ -43,7 +39,7 @@ const __dirname = getOuterbaseDir();
 // │ │ ├── main.js
 // │ │ └── preload.mjs
 // │
-process.env.APP_ROOT = path.join(__dirname, "..");
+process.env.APP_ROOT = path.join(dirname, "..");
 
 // 🚧 Use ['ENV_NAME'] avoid vite:define plugin - Vite@2.x
 export const VITE_DEV_SERVER_URL = process.env["VITE_DEV_SERVER_URL"];
@@ -55,83 +51,8 @@ process.env.VITE_PUBLIC = VITE_DEV_SERVER_URL
 
 const settings = new Setting();
 settings.load();
-const application: OuterbaseApplication = {
-  win: undefined,
-};
 
-export function createWindow() {
-  application.win = new BrowserWindow({
-    icon: path.join(process.env.VITE_PUBLIC, "electron-vite.svg"),
-    title: "Outerbase Studio",
-
-    autoHideMenuBar: true,
-    webPreferences: {
-      devTools: true,
-      preload: path.join(__dirname, "preload.mjs"),
-    },
-  });
-
-  if (isDev) {
-    application.win.webContents.openDevTools({ mode: "detach" });
-  }
-
-  // Test active push message to Renderer-process.
-  application.win.webContents.on("did-finish-load", () => {
-    application.win?.webContents.send(
-      "main-process-message",
-      new Date().toLocaleString(),
-    );
-  });
-
-  application.win.webContents.on("will-navigate", (event, url) => {
-    console.log("trying to navigate", url);
-    event.preventDefault();
-  });
-
-  application.win.webContents.on("will-redirect", (event, url) => {
-    log.info("trying to redirect", url);
-    event.preventDefault();
-  });
-
-  autoUpdater.checkForUpdatesAndNotify();
-
-  autoUpdater.on("checking-for-update", () => {
-    application.win?.webContents.send("checking-for-update");
-    log.info("checking-for-update");
-  });
-
-  autoUpdater.on("update-available", (info) => {
-    application.win?.webContents.send("update-available", info);
-    log.info("update-available", info);
-  });
-
-  autoUpdater.on("update-not-available", (info) => {
-    application.win?.webContents.send("update-not-available", info);
-    log.info("update-not-available", info);
-  });
-
-  autoUpdater.on("error", (info) => {
-    application.win?.webContents.send("update-error", info);
-    log.info("error", info);
-  });
-
-  autoUpdater.on("download-progress", (progress) => {
-    application.win?.webContents.send("update-download-progress", progress);
-    log.info("download-progress", progress);
-  });
-
-  autoUpdater.on("update-downloaded", (info) => {
-    application.win?.webContents.send("update-downloaded", info);
-    log.info("update-downloaded", info);
-  });
-
-  if (VITE_DEV_SERVER_URL) {
-    application.win.loadURL(VITE_DEV_SERVER_URL);
-  } else {
-    // win.loadFile('dist/index.html')
-    application.win.loadFile(path.join(RENDERER_DIST, "index.html"));
-  }
-}
+const mainWindow = new MainWindow();
 
 // Quit when all windows are closed, except on macOS. There, it's common
 // for applications and their menu bar to stay active until the user quits
@@ -139,7 +60,7 @@ export function createWindow() {
 app.on("window-all-closed", () => {
   if (!isMac) {
     app.quit();
-    application.win = undefined;
+    mainWindow.remove();
   }
 });
 
@@ -147,19 +68,19 @@ app.on("activate", () => {
   // On OS X it's common to re-create a window in the app when the
   // dock icon is clicked and there are no other windows open.
   if (BrowserWindow.getAllWindows().length === 0) {
-    createWindow();
+    mainWindow.init();
   }
 });
 
 app
   .whenReady()
-  .then(createWindow)
+  .then(() => mainWindow.init())
   .finally(() => {
-    bindDockerIpc(application);
+    bindDockerIpc(mainWindow);
   });
 
 ipcMain.on("connections", (_, connections: ConnectionStoreItem[]) => {
-  createMenu(application.win, connections);
+  bindMenuIpc(mainWindow, settings, connections);
 });
 
 ipcMain.handle("query", async (_, connectionId, query) => {
@@ -174,23 +95,22 @@ ipcMain.handle(
   },
 );
 
-ipcMain.handle("close", async (sender) => {
-  sender.sender.close({
+ipcMain.handle("close", async (event) => {
+  event.sender.close({
     waitForBeforeUnload: true,
   });
-
-  if (BrowserWindow.getAllWindows().length > 1) {
-    application.win?.destroy();
-  }
 });
 
 ipcMain.handle("connect", (_, conn: ConnectionStoreItem, enableDebug) => {
   createDatabaseWindow({
-    win: application.win,
     conn,
+    settings,
+    main: mainWindow,
     enableDebug,
   });
-  if (application.win) application.win.hide();
+  if (mainWindow.getWindow()) {
+    mainWindow.hide();
+  }
 });
 
 ipcMain.handle("test-connection", async (_, conn: ConnectionStoreItem) => {
@@ -215,4 +135,8 @@ ipcMain.handle("get-setting", (_, key) => {
 
 ipcMain.handle("set-setting", (_, key, value) => {
   settings.set(key, value);
+});
+
+ipcMain.on("navigate", (event, route: string) => {
+  event.sender.send("navigate-to", route);
 });

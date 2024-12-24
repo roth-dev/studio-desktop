@@ -22,7 +22,7 @@ function getWindowConfig(connId?: string) {
     show: false,
     width: 1024,
     height: 768,
-    autoHideMenuBar: true,
+    autoHideMenuBar: false,
     webPreferences: {
       devTools: true,
       additionalArguments: ["--database=" + connId],

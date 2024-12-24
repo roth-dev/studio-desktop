@@ -1,27 +1,29 @@
+import { isMac } from "../utils";
+import { Setting } from "../setting";
+import { MainWindow } from "../window/main-window";
+import { OUTERBASE_GITHUB, OUTERBASE_WEBSITE } from "../constants";
 import { ConnectionStoreItem } from "@/lib/conn-manager-store";
 import { app, Menu, MenuItemConstructorOptions, shell } from "electron";
-import { isMac } from "../utils";
 import { createDatabaseWindow, windowMap } from "../window/create-database";
-import { OuterbaseApplication } from "../type";
-import { createWindow } from "../main";
-import { createConnectionWindow } from "../window/create-connection-window";
-import { OUTERBASE_GITHUB, OUTERBASE_WEBSITE } from "../constants";
 
-export function createMenu(
-  win: OuterbaseApplication["win"],
+export function bindMenuIpc(
+  main: MainWindow,
+  settings: Setting,
   connections: ConnectionStoreItem[],
 ) {
-  function handleClick() {
-    createWindow();
-  }
+  const mainWindow = main.getWindow();
 
   function onOpenConnectionWindow(type: ConnectionStoreItem["type"]) {
-    createConnectionWindow(win, type);
-    win?.hide();
+    main.navigate(`/connection/create/${type}`);
   }
 
   function generateSubMenu() {
-    const connMenu: MenuItemConstructorOptions["submenu"] = connections.map(
+    const MAX_VISIBLE_CONNECTIONS = 10;
+
+    const visibleConn = connections.slice(-MAX_VISIBLE_CONNECTIONS);
+    const remainConn = connections.slice(MAX_VISIBLE_CONNECTIONS);
+
+    const connMenu: MenuItemConstructorOptions["submenu"] = visibleConn.map(
       (conn) => {
         return {
           label: conn.name,
@@ -30,13 +32,26 @@ export function createMenu(
             if (existingWindow && !existingWindow.isDestroyed()) {
               existingWindow.focus();
             } else {
-              createDatabaseWindow({ win, conn });
-              win?.hide();
+              createDatabaseWindow({ main, conn, settings });
+              mainWindow?.hide();
             }
           },
         };
       },
     );
+
+    if (remainConn.length > 0) {
+      connMenu.push({
+        type: "separator",
+      });
+      connMenu.push({
+        label: "See more connection...",
+        click: () => {
+          main.show();
+          main.navigate("/connection");
+        },
+      });
+    }
 
     return connMenu;
   }
@@ -95,17 +110,12 @@ export function createMenu(
           ],
         },
         {
-          label: "New Window",
-          click: handleClick,
-        },
-        {
           type: "separator",
         },
         {
           label: "Open Recent",
           enabled: connSubMenu.length > 0,
           submenu: connSubMenu,
-          click: handleClick,
         },
         {
           type: "separator",
