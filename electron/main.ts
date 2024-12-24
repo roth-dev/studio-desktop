@@ -77,11 +77,8 @@ app
   .then(() => mainWindow.init())
   .finally(() => {
     bindDockerIpc(mainWindow);
+    bindMenuIpc(mainWindow, settings);
   });
-
-ipcMain.on("connections", (_, connections: ConnectionStoreItem[]) => {
-  bindMenuIpc(mainWindow, settings, connections);
-});
 
 ipcMain.handle("query", async (_, connectionId, query) => {
   const r = await ConnectionPool.query(connectionId, query);
