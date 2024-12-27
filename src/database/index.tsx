@@ -25,6 +25,7 @@ import {
 } from "@dnd-kit/sortable";
 import { MySQLIcon } from "@/lib/outerbase-icon";
 import {
+  FolderIcon,
   LucideCopy,
   LucideMoreHorizontal,
   LucidePencil,
@@ -57,6 +58,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import ImportConnectionStringRoute from "./import-connection-string";
+import Folder from "@/components/folder";
 
 const connectionTypeList = [
   "mysql",
@@ -100,7 +102,6 @@ function DeletingModal({
             <span className="font-semibold">{data.name}</span>?
           </AlertDialogDescription>
         </AlertDialogHeader>
-
         <AlertDialogFooter>
           <AlertDialogCancel onClick={onClose}>Cancel</AlertDialogCancel>
           <AlertDialogAction onClick={onSuccess}>Continue</AlertDialogAction>
@@ -336,30 +337,37 @@ function ConnectionListRoute() {
       )}
 
       <div className="flex-1 overflow-y-auto overflow-x-hidden">
-        <AnimatePresence initial={false}>
-          <DndContext
-            sensors={sensors}
-            collisionDetection={closestCenter}
-            onDragEnd={handleDragEnd}
-            modifiers={[restrictToVerticalAxis]}
-          >
-            <SortableContext
-              items={connectionList}
-              strategy={verticalListSortingStrategy}
-            >
-              {connectionList.map((item) => (
-                <ConnectionItem
-                  key={item.id}
-                  item={item}
-                  selectedConnection={selectedConnection}
-                  setSelectedConnection={setSelectedConnection}
-                  setConnectionList={setConnectionList}
-                  setDeletingConnectionId={setDeletingConnectionId}
-                />
-              ))}
-            </SortableContext>
-          </DndContext>
-        </AnimatePresence>
+        <Folder
+          data={connectionList}
+          renderItem={(data) => {
+            return (
+              <AnimatePresence initial={false}>
+                <DndContext
+                  sensors={sensors}
+                  collisionDetection={closestCenter}
+                  onDragEnd={handleDragEnd}
+                  modifiers={[restrictToVerticalAxis]}
+                >
+                  <SortableContext
+                    items={connectionList}
+                    strategy={verticalListSortingStrategy}
+                  >
+                    {data.map((item) => (
+                      <ConnectionItem
+                        key={item.id}
+                        item={item}
+                        selectedConnection={selectedConnection}
+                        setSelectedConnection={setSelectedConnection}
+                        setConnectionList={setConnectionList}
+                        setDeletingConnectionId={setDeletingConnectionId}
+                      />
+                    ))}
+                  </SortableContext>
+                </DndContext>
+              </AnimatePresence>
+            );
+          }}
+        />
       </div>
     </div>
   );
