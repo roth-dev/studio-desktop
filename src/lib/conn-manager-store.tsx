@@ -20,6 +20,7 @@ export interface ConnectionStoreItem {
   name: string;
   type: string;
   config: ConnectionStoreItemConfig;
+  lastConnectAt?: number;
 }
 
 interface ConnectionTypeTemplate {
@@ -258,7 +259,6 @@ export class ConnectionStoreManager {
   static save(item: ConnectionStoreItem) {
     const list = this.list();
     const index = list.findIndex((i) => i.id === item.id);
-
     if (index === -1) {
       list.unshift(item);
     } else {
@@ -270,5 +270,15 @@ export class ConnectionStoreManager {
 
   static saveAll(items: ConnectionStoreItem[]) {
     localStorage.setItem("connections", JSON.stringify(items));
+  }
+
+  static sort(list: ConnectionStoreItem[]) {
+    if (list.length === 0) return [];
+
+    return list.sort(
+      (a, b) =>
+        new Date(b.lastConnectAt || 0).getTime() -
+        new Date(a.lastConnectAt || 0).getTime(),
+    );
   }
 }

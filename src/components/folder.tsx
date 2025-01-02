@@ -1,12 +1,14 @@
 import { FolderIcon } from "lucide-react";
 import { Button } from "./ui/button";
-import React, { useMemo, useState } from "react";
 import { ConnectionStoreItem } from "@/lib/conn-manager-store";
 import { Input } from "./ui/input";
+import { cn } from "@/lib/utils";
 
 interface Props {
-  data: ConnectionStoreItem[];
-  renderItem: (data: ConnectionStoreItem[]) => React.ReactElement;
+  search: string;
+  selected: string;
+  setSearch: (search: string) => void;
+  onChangeFolder: (folder: string) => void;
 }
 
 interface Folder {
@@ -15,6 +17,7 @@ interface Folder {
 }
 
 const connectionTypeList = [
+  "recent",
   "mysql",
   "postgres",
   "sqlite",
@@ -22,28 +25,37 @@ const connectionTypeList = [
   "cloudflare",
   "starbase",
 ];
-export default function Folder({ data, renderItem }: Props) {
-  const [activeType, setActiveType] = useState("mysql");
 
-  const filterConnections = useMemo(() => {
-    return data.filter((item) => item.type === activeType);
-  }, [data, activeType]);
-
+export default function Folder({
+  selected,
+  search,
+  setSearch,
+  onChangeFolder,
+}: Props) {
   return (
-    <div className="bg-red flex h-full flex-1 flex-row gap-3">
-      <div className="w-48 pl-3">
-        {/* <CreateFolderButton /> */}
+    <div className="flex-1 gap-3">
+      <div className="pl-3">
         <div className="mb-3 mt-3">
-          <Input placeholder="Search..." />
+          <Input
+            placeholder="Search..."
+            value={search}
+            onChange={(e) => {
+              e.preventDefault();
+              setSearch(e.target.value);
+            }}
+          />
         </div>
         {connectionTypeList.map((conn, index) => {
-          const active = conn === activeType;
+          const active = conn === selected;
           return (
             <Button
-              onClick={() => setActiveType(conn)}
               key={index}
               variant="ghost"
-              className={`flex ${active ? "bg-neutral-800" : ""} w-full justify-start gap-3 p-2`}
+              onClick={() => onChangeFolder(conn)}
+              className={cn(
+                "w-full justify-start gap-3 p-2",
+                `${active ? "bg-gray-200 dark:bg-neutral-800" : ""}`,
+              )}
             >
               <FolderIcon size={14} />
               <span className="text-sm capitalize">{conn}</span>
@@ -51,7 +63,6 @@ export default function Folder({ data, renderItem }: Props) {
           );
         })}
       </div>
-      <div className="flex-1 border-l">{renderItem(filterConnections)}</div>
     </div>
   );
 }
