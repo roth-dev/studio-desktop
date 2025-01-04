@@ -21,6 +21,7 @@ import ImportConnectionStringRoute from "./import-connection-string";
 import Folder from "@/components/folder";
 import { PanelGroup } from "@/components/resizeable-panel";
 import ConnectionList from "@/components/database/connection-list";
+import useNavigateToRoute from "@/hooks/useNavigateToRoute";
 
 const connectionTypeList = [
   "mysql",
@@ -33,6 +34,7 @@ const connectionTypeList = [
 
 function ConnectionListRoute() {
   const [search, setSearch] = useState("");
+  useNavigateToRoute();
 
   const [selectedFolder, setSelectedFolder] = useState("recent");
 
