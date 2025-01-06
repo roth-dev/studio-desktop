@@ -289,7 +289,8 @@ export class ConnectionStoreManager {
     } else {
       list[index] = item;
     }
-    localStorage.setItem("connections", JSON.stringify(this.sort(list)));
+    const finalData = this.sort(list);
+    localStorage.setItem("connections", JSON.stringify(finalData));
   }
 
   static saveAll(items: ConnectionStoreItem[]) {
