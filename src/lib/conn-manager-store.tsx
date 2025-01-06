@@ -19,6 +19,9 @@ export interface ConnectionStoreItem {
   id: string;
   name: string;
   type: string;
+  createdAt?: string;
+  updatedAt?: string;
+  lastConnectedAt?: number;
   config: ConnectionStoreItemConfig;
 }
 
@@ -243,7 +246,7 @@ export class ConnectionStoreManager {
   }
 
   static duplicate(item: ConnectionStoreItem) {
-    const newItem = {
+    const newItem: ConnectionStoreItem = {
       ...item,
       id: crypto.randomUUID(),
       name: `${item.name} (Copy)`,
@@ -258,7 +261,14 @@ export class ConnectionStoreManager {
     return list;
   }
 
-  static save(item: ConnectionStoreItem) {
+  static save(connItem: ConnectionStoreItem) {
+    const currentDate = new Date().toISOString();
+    const item = {
+      ...connItem,
+      createdAt: connItem.createdAt || currentDate,
+      updatedAt: currentDate,
+      lastConnectedAt: Date.now(),
+    };
     const list = this.list();
     const index = list.findIndex((i) => i.id === item.id);
 
@@ -267,11 +277,22 @@ export class ConnectionStoreManager {
     } else {
       list[index] = item;
     }
-
-    localStorage.setItem("connections", JSON.stringify(list));
+    localStorage.setItem("connections", JSON.stringify(this.sort(list)));
   }
 
   static saveAll(items: ConnectionStoreItem[]) {
     localStorage.setItem("connections", JSON.stringify(items));
+  }
+
+  static update(item: ConnectionStoreItem) {
+    this.save(item);
+  }
+
+  static sort(items: ConnectionStoreItem[]) {
+    return items.sort((a, b) => {
+      const aDate = a.lastConnectedAt || 0;
+      const bDate = b.lastConnectedAt || 0;
+      return bDate - aDate;
+    });
   }
 }

@@ -138,6 +138,17 @@ function ConnectionItem({
     transition,
   };
 
+  function onConnect(debuggerMode = false) {
+    window.outerbaseIpc
+      .connect(item, debuggerMode)
+      .then(() => {
+        ConnectionStoreManager.update(item);
+      })
+      .finally(() => {
+        setConnectionList(ConnectionStoreManager.list());
+      });
+  }
+
   return (
     <div
       ref={setNodeRef}
@@ -147,9 +158,7 @@ function ConnectionItem({
       onMouseDown={() => {
         setSelectedConnection(item.id);
       }}
-      onDoubleClick={() => {
-        window.outerbaseIpc.connect(item);
-      }}
+      onDoubleClick={() => onConnect()}
     >
       <motion.div
         initial={{ transform: "translateX(100%)" }}
@@ -183,21 +192,11 @@ function ConnectionItem({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem
-                inset
-                onClick={() => {
-                  window.outerbaseIpc.connect(item);
-                }}
-              >
+              <DropdownMenuItem inset onClick={() => onConnect()}>
                 Connect
               </DropdownMenuItem>
 
-              <DropdownMenuItem
-                inset
-                onClick={() => {
-                  window.outerbaseIpc.connect(item, true);
-                }}
-              >
+              <DropdownMenuItem inset onClick={() => onConnect(true)}>
                 Connect with debugger
               </DropdownMenuItem>
 
@@ -276,7 +275,6 @@ function ConnectionListRoute() {
 
   function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event;
-
     if (active?.id !== over?.id) {
       setConnectionList((items) => {
         const oldIndex = items.findIndex((item) => item.id === active?.id);
