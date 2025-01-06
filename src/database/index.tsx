@@ -260,6 +260,11 @@ function ConnectionListRoute() {
 
   function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event;
+
+    if (!over) {
+      return;
+    }
+
     if (active?.id !== over?.id) {
       setConnectionList((items) => {
         const oldIndex = items.findIndex((item) => item.id === active?.id);
