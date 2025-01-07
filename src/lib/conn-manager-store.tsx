@@ -20,8 +20,8 @@ export interface ConnectionStoreItem {
   id: string;
   name: string;
   type: string;
-  createdAt?: string;
-  updatedAt?: string;
+  createdAt?: number;
+  updatedAt?: number;
   lastConnectedAt?: number;
   config: ConnectionStoreItemConfig;
 }
@@ -262,6 +262,7 @@ export class ConnectionStoreManager {
       ...item,
       id: crypto.randomUUID(),
       name: `${item.name} (Copy)`,
+      createdAt: Date.now(),
     };
 
     // Make it below the original item
@@ -273,14 +274,7 @@ export class ConnectionStoreManager {
     return list;
   }
 
-  static save(connItem: ConnectionStoreItem) {
-    const currentDate = new Date().toISOString();
-    const item = {
-      ...connItem,
-      createdAt: connItem.createdAt || currentDate,
-      updatedAt: currentDate,
-      lastConnectedAt: Date.now(),
-    };
+  static save(item: ConnectionStoreItem) {
     const list = this.list();
     const index = list.findIndex((i) => i.id === item.id);
 
@@ -295,10 +289,6 @@ export class ConnectionStoreManager {
 
   static saveAll(items: ConnectionStoreItem[]) {
     localStorage.setItem("connections", JSON.stringify(items));
-  }
-
-  static update(item: ConnectionStoreItem) {
-    this.save(item);
   }
 
   static sort(items: ConnectionStoreItem[]) {

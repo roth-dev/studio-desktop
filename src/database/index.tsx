@@ -133,7 +133,7 @@ function ConnectionItem({
     window.outerbaseIpc
       .connect(item, debuggerMode)
       .then(() => {
-        ConnectionStoreManager.update(item);
+        ConnectionStoreManager.save({ ...item, lastConnectedAt: Date.now() });
       })
       .finally(() => {
         setConnectionList(ConnectionStoreManager.list());
