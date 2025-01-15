@@ -1,6 +1,4 @@
 import { Toolbar } from "@/components/toolbar";
-import { DragEndEvent } from "@dnd-kit/core";
-import { arrayMove } from "@dnd-kit/sortable";
 import { AnimatedRouter } from "@/components/animated-router";
 import { ConnectionCreateUpdateRoute } from "./editor-route";
 import { ConnectionStoreManager } from "@/lib/conn-manager-store";
@@ -16,26 +14,6 @@ function ConnectionListRoute() {
   const [connectionList, setConnectionList] = useState(() => {
     return ConnectionStoreManager.list();
   });
-
-  function handleDragEnd(event: DragEndEvent) {
-    const { active, over } = event;
-
-    if (!over) {
-      return;
-    }
-
-    if (active?.id !== over?.id) {
-      setConnectionList((items) => {
-        const oldIndex = items.findIndex((item) => item.id === active?.id);
-        const newIndex = items.findIndex((item) => item.id === over?.id);
-        const newList = arrayMove(items, oldIndex, newIndex);
-
-        ConnectionStoreManager.saveAll(newList);
-        return newList;
-      });
-    }
-  }
-
   return (
     <div className="flex h-full w-full flex-col">
       <Toolbar>
@@ -43,7 +21,6 @@ function ConnectionListRoute() {
       </Toolbar>
       <ConnectionList
         data={connectionList}
-        onDragEnd={handleDragEnd}
         setConnectionList={setConnectionList}
       />
     </div>
