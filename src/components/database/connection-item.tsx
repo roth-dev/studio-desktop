@@ -22,9 +22,10 @@ import {
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
 import { generateConnectionString } from "@/lib/connection-string";
-import { cn } from "@/lib/utils";
+import { cn, getDatabaseColor } from "@/lib/utils";
 import { DispatchState } from "./type";
 import useTimeAgo from "@/hooks/useTimeAgo";
+
 export default function ConnectionItem({
   item,
   selectedConnection,
@@ -57,7 +58,6 @@ export default function ConnectionItem({
         setConnectionList(ConnectionStoreManager.list());
       });
   }
-
   return (
     <div
       onMouseDown={() => {
@@ -72,8 +72,17 @@ export default function ConnectionItem({
       )}
     >
       <div className="flex flex-1 gap-3">
-        <div className="flex h-14 w-14 items-center justify-center rounded-sm bg-gray-200 dark:bg-neutral-800">
-          <IconComponent className="h-8 w-8" />
+        <div
+          className={cn(
+            "flex h-14 w-14 items-center justify-center rounded-sm",
+            item.color
+              ? getDatabaseColor(item.color)
+              : "bg-gray-200 dark:bg-neutral-800",
+          )}
+        >
+          <IconComponent
+            className={cn("h-8 w-8", item.color ? "text-white" : undefined)}
+          />
         </div>
         <div className="flex flex-1 flex-col gap-1 text-sm">
           <div className="line-clamp-2 font-semibold">{item.name}</div>
@@ -145,12 +154,16 @@ export default function ConnectionItem({
           </DropdownMenu>
         </div>
       </div>
-      <div className="absolute bottom-3 text-sm text-neutral-600">
-        Last connected{" "}
-        {item?.lastConnectedAt
-          ? timeAgo(item?.lastConnectedAt, true)
-          : "unknown"}
-      </div>
+      {(!!item.updatedAt || !!item.lastConnectedAt) && (
+        <div className="absolute bottom-3 text-sm text-neutral-600">
+          {item?.updatedAt === item?.lastConnectedAt
+            ? "Updated"
+            : "Last connected"}{" "}
+          {item?.lastConnectedAt
+            ? timeAgo(item?.lastConnectedAt, true)
+            : "unknown"}
+        </div>
+      )}
     </div>
   );
 }
