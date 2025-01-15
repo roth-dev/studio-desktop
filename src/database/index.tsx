@@ -41,7 +41,7 @@ function ConnectionListRoute() {
       </Toolbar>
       {!!search && connections.length === 0 ? (
         <div className="flex flex-1 justify-center p-3 text-sm text-neutral-600">
-          Search not found.
+          Search connection not found.
         </div>
       ) : (
         <ConnectionList
