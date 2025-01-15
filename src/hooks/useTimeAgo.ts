@@ -1,6 +1,6 @@
 export default function useTimeAgo() {
   /**
-   * @param timestamp number of timestapm
+   * @param timestamp number of timestamps
    * @param addSuffix (optional)
    */
   const timeAgo = (timestamp: number, addSuffix?: boolean) => {
